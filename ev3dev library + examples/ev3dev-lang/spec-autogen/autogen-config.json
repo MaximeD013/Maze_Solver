@@ -1,0 +1,7 @@
+{
+    "files": [
+        "../docs/classes.rst",
+        "../docs/sensors.rst"
+    ],
+    "templateDir": "./"
+}
