@@ -13,6 +13,41 @@ control::~control()
   reset();
 }
 
+void control::calibrate()
+{
+	int speed = 500;
+	_motorX.set_speed_sp(speed);
+	_motorY.set_speed_sp(-25);
+	//_motorY.set_speed_sp(-speed);
+	_state = state_driving;
+	_motorX.run_forever();
+	_motorY.run_forever();
+	this_thread::sleep_for(chrono::milliseconds(300));
+	while (_state == state_driving)
+	{
+		this_thread::sleep_for(chrono::milliseconds(10));
+		if (_motorX.speed() == 0 && _motorY.speed() == 0)
+		{
+			_motorX.stop_action();
+			_motorY.stop_action();
+			_motorX.stop();
+			_motorY.stop();
+			_motorX.reset();
+			_motorY.reset();
+			_state = state_idle;
+		}
+	}
+	/*while (_state == state_driving)
+	{
+		if (_motorX.speed() == 0)
+		{
+			_motorX.stop_action();
+			_state = state_idle;
+		}
+	}*/
+	
+}
+
 void control::driveX(int speed, int time)
 {
   _motorX.set_speed_sp(-speed);
@@ -102,5 +137,6 @@ bool control::initialized() const
 int main()
 {
   control c;
-  c.drive(50, 3000);
+  //c.driveX(100, 0);
+  c.calibrate();
 }

@@ -13,7 +13,9 @@ public:
   control();
   ~control();
 
-  void drive(int speed, int time=0);
+  void calibrate();
+  void driveX(int speed, int time=0);
+  void driveY(int speed, int time=0);
   void turn(int direction);
   void stop();
   void reset();
