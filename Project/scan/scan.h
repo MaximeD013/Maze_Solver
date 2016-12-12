@@ -14,12 +14,11 @@ public:
   ~control();
 
   void calibrate();
-  void driveX(int speed, int time=0);
-  void driveY(int speed, int time=0);
-  void turn(int direction);
+  void scan();
+  void colorscan();
+  void test();
   void stop();
   void reset();
-
   bool initialized() const;
 
   void terminate() { _terminate = true; }
@@ -27,6 +26,7 @@ public:
 protected:
   medium_motor    _motorX;
   large_motor     _motorY;
+  color_sensor       _sensor;
   //large_motor     _motorZ;
 
   enum state
