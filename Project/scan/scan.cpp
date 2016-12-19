@@ -1,11 +1,5 @@
 #include "scan.h"
 
-int maxX;
-int maxY;
-int speedX = 300;
-int speedY = -40;
-
-
 control::control() :
   _motorX(OUTPUT_A),
   _motorY(OUTPUT_B),
@@ -37,13 +31,15 @@ void control::calibrate()
     {
       _motorX.stop_action();      
       _motorX.stop();      
-      _motorX.reset();      
+      _motorX.reset();
+      printf("%d\n", _motorX.position());      
     }
     if (_motorY.state().count("stalled"))
     {
       _motorY.stop_action();
       _motorY.stop();
       _motorY.reset();
+      printf("%d\n", _motorY.position());  
     }
     if (_motorX.speed() == 0 && _motorY.speed() == 0)
     {
@@ -66,13 +62,15 @@ void control::calibrate()
     {
       _motorX.stop_action();      
       _motorX.stop();
-      maxX = _motorX.position_sp();
+      maxX = _motorX.position() + 20;
+      printf("%d\n", maxX);
     }
     if (_motorY.state().count("stalled"))
     {
       _motorY.stop_action();
       _motorX.stop();
-      maxY = _motorY.position_sp();
+      maxY = _motorY.position() - 5;
+      printf("%d\n", maxY);
     }
     if (_motorX.speed() == 0 && _motorY.speed() == 0)
     {
@@ -95,58 +93,60 @@ void control::scan()
   _motorX.set_speed_sp(speedX);
   _motorY.set_speed_sp(speedY);
   while (1)
-  {    
-    _state = state_driving;
-    _motorX.run_forever();
-    this_thread::sleep_for(chrono::milliseconds(300));
-    while (_state == state_driving)
+  {
+    RunMotorX(maxX);
+    if(RunMotorY() == false)
     {
-      this_thread::sleep_for(chrono::milliseconds(10));
-      colorscan();
-      if (_motorX.speed() == 0)
-      {
-        _motorX.stop_action();      
-        _motorX.stop();
-        _motorY.set_position_sp(180);
-        _motorY.run_to_rel_pos();
-        this_thread::sleep_for(chrono::milliseconds(300));
-        while (_motorY.state().count("running"))
-        {
-          this_thread::sleep_for(chrono::milliseconds(10));
-          if (_motorY.state().count("stalled"))
-          {
-            _motorX.stop_action();      
-            _motorX.stop();
-            _motorY.stop_action();
-            _motorY.stop();
-            calibrate();
-            return;
-          }          
-        }
-        this_thread::sleep_for(chrono::milliseconds(300));        
-        if (_motorY.speed() == 0)
-        {
-          speedX = -speedX;
-          _motorX.set_speed_sp(speedX);
-          _state = state_idle;
-        }
-      }
+      return;
+    }      
+    RunMotorX(0);
+    if(RunMotorY() == false)
+    {
+      return;
+    } 
+  }
+}
+
+void control::RunMotorX(int position)
+{
+  _motorX.set_position_sp(position);
+  _motorX.run_to_abs_pos();
+  this_thread::sleep_for(chrono::milliseconds(300));
+  while (_motorX.state().count("running"))
+  {
+    this_thread::sleep_for(chrono::milliseconds(10));
+    colorscan();
+  }
+}
+
+bool control::RunMotorY()
+{
+  _motorY.set_position_sp(1000);
+  _motorY.run_to_rel_pos();
+  this_thread::sleep_for(chrono::milliseconds(300));
+  while (_motorY.state().count("running"))
+  {
+    this_thread::sleep_for(chrono::milliseconds(10));
+    if (_motorY.position() >= maxY)
+    {     
+      _motorY.stop_action();
+      _motorY.stop();
+      return false;
     }
   }
+  return true;
 }
 
 void control::colorscan()
 {
   int value = _sensor.reflected_light_intensity();
-  if(value > 23)
+  if(value > 19)
   {
-    //sound::speak("wit", true);
-    printf("White       %d\n", value);
+    printf("White - %d    X: %d     Y:    %d\n", value, _motorX.position(), _motorY.position());
   }
-  else if(value < 24)
+  else if(value < 20)
   {
-    //sound::speak("zwart", true);
-    printf("Black       %d\n", value);
+    printf("Black - %d    X: %d     Y:    %d\n", value, _motorX.position(), _motorY.position());
   }
   
 }
@@ -202,7 +202,30 @@ int main()
   control c;
   c.calibrate();
   //c.test();
-  //c.scan();
+
+  c.scan();
+  // sound::tone({
+  //           {392, 350, 100}, {392, 350, 100}, {392, 350, 100}, {311.1, 250, 100},
+  //           {466.2, 25, 100}, {392, 350, 100}, {311.1, 250, 100}, {466.2, 25, 100},
+  //           {392, 700, 100}, {587.32, 350, 100}, {587.32, 350, 100},
+  //           {587.32, 350, 100}, {622.26, 250, 100}, {466.2, 25, 100},
+  //           {369.99, 350, 100}, {311.1, 250, 100}, {466.2, 25, 100}, {392, 700, 100},
+  //           {784, 350, 100}, {392, 250, 100}, {392, 25, 100}, {784, 350, 100},
+  //           {739.98, 250, 100}, {698.46, 25, 100}, {659.26, 25, 100},
+  //           {622.26, 25, 100}, {659.26, 50, 400}, {415.3, 25, 200}, {554.36, 350, 100},
+  //           {523.25, 250, 100}, {493.88, 25, 100}, {466.16, 25, 100}, {440, 25, 100},
+  //           {466.16, 50, 400}, {311.13, 25, 200}, {369.99, 350, 100},
+  //           {311.13, 250, 100}, {392, 25, 100}, {466.16, 350, 100}, {392, 250, 100},
+  //           {466.16, 25, 100}, {587.32, 700, 100}, {784, 350, 100}, {392, 250, 100},
+  //           {392, 25, 100}, {784, 350, 100}, {739.98, 250, 100}, {698.46, 25, 100},
+  //           {659.26, 25, 100}, {622.26, 25, 100}, {659.26, 50, 400}, {415.3, 25, 200},
+  //           {554.36, 350, 100}, {523.25, 250, 100}, {493.88, 25, 100},
+  //           {466.16, 25, 100}, {440, 25, 100}, {466.16, 50, 400}, {311.13, 25, 200},
+  //           {392, 350, 100}, {311.13, 250, 100}, {466.16, 25, 100},
+  //           {392.00, 300, 150}, {311.13, 250, 100}, {466.16, 25, 100}, {392, 700}
+  //           },
+  //           true
+  //           );
   
 }
 

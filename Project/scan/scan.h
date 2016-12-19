@@ -15,6 +15,8 @@ public:
 
   void calibrate();
   void scan();
+  void RunMotorX(int position);
+  bool RunMotorY();
   void colorscan();
   void test();
   void stop();
@@ -22,6 +24,12 @@ public:
   bool initialized() const;
 
   void terminate() { _terminate = true; }
+
+private:
+  int maxX;
+  int maxY;
+  int speedX = 200;
+  int speedY = -40;
 
 protected:
   medium_motor    _motorX;
